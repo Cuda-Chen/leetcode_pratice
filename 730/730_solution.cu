@@ -44,7 +44,7 @@ __global__ void helperKernel(char *S, int *dp, int n, long kMod, int len) {
        
        dp[(i * n) + j] = (dp[(i * n) + j] + kMod) % kMod; // perform positive modulo
    }
-   __syncthreads();
+   //__syncthreads();
 }
 
 int countPalindromicSubsequences(char * S){
@@ -60,7 +60,9 @@ int countPalindromicSubsequences(char * S){
     for(int i = 0; i < n; i++) {
         dp[(i * n) + i] = 1;
     }
-    
+
+    clock_t t;
+    t = clock();    
     for(int len = 1; len <= n; len++) {
         for(int i = 0; i < n - len; i++) {
             int j = i + len; // jth element is the end of current string
@@ -90,6 +92,8 @@ int countPalindromicSubsequences(char * S){
             dp[(i * n) + j] = (dp[(i * n) + j] + kMod) % kMod; // perform positive modulo
         }
     }
+    t = clock() - t;
+    printf("execution time: %f\n", ((float)t / CLOCKS_PER_SEC));
     
     // GPU part
     int *h_dp = (int *)malloc(n * n * sizeof(int));
@@ -114,9 +118,13 @@ int countPalindromicSubsequences(char * S){
     checkError(cudaMemcpy(d_dp, h_dp, n * n * sizeof(int), cudaMemcpyHostToDevice));
     checkError(cudaMemcpy(d_S, S, n * sizeof(char), cudaMemcpyHostToDevice));
 
+    t = clock();
     for(int len = 1; len <= n; len++) {
-        helperKernel<<<1, 1024>>>(d_S, d_dp, n, kMod, len);
+        helperKernel<<<1, 1000>>>(d_S, d_dp, n, kMod, len);
     }
+    cudaDeviceSynchronize();
+    t = clock() - t;
+    printf("execution time: %f\n", ((float)t / CLOCKS_PER_SEC));
 
     checkError(cudaMemcpy(h_dp, d_dp, n * n * sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -138,7 +146,8 @@ int countPalindromicSubsequences(char * S){
 
 int main() {
     //char *input = "bccb";
-    char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
+    //char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
+    char *input = "babbdbccbaacdbddaabdccdbacdbcdbacdaccdcbaacadbcbddbcccbbabbababdcadacdbbcbabdbaddadaababbaacddbacaaddbcaabbdbdddcbbbacbbbcbadcdadcadcdaccdcccaacadbacbaaaadcdabbbacdcbbdcbddbabacaabaadcbaaadbddbdcbbbcaacdcdbbbcdccbcdaabbddacbdcdbdcacbbdbccbccbddcacdabdcdddcbcacbadabccabaddacaaaacaabdcdbccbbdcdccbbacacaaabcdddaaaabcdbaccddabcaabcaaacacaddccbdddabbcbcaacbdcacddbdcbddbaccadbdacbaccabccdcdadacbdaccccbbccaadabacdbcbdcbadddcbcbcdbdbcdabcaacdcbbdbbbbaddbcdaaacabacaddaaccccbadbacbcbdcdacbbdbaaccdcddbcbdbbbbcbbbaaadbdbdbcbdabaacccccbddbbcccaadcbdcaacacccbcdddcbcbdacbbccdbaadddaacccbcbdadacdcdcacdccabbbdaabacdadccdadbdbcbbdcbcabdcbdccbbadbddbbbbddadbabdccbbdcbacabbbcabbcdbcabdbdbabcbddaaacacadcbcbadbdabbbddcbcbdcaacabcdbccddacbcaccadcdccaaaababccaaacbcaaaccdcaacdabddbbcbbbcccaccdaccdcbabbbdddccbcadddaaabdabacddacdbbaacbdbacaaacaaabbbcaaccddccddacabadbddcddadbbccadcdcaaccddbdabbdbddacabaacccdbdbdaccabbbcadbccccdaabbcbaacacccdcbcbabaadcbacaacbbcbccbdcdacdacddcbccdcaccaabcdbacbbdcbadabcccadadddbcaca";
     //clock_t t;
     //t = clock();
     int result = countPalindromicSubsequences(input);
