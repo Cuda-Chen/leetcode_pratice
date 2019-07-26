@@ -17,7 +17,7 @@ int part; // which number of thread
 
 void *helper(void *arg) {
     int thread_part = part++;
-    for(int i = thread_part * (n / MAX_THREAD); i < len - (thread_part + 1) * (n / MAX_THREAD); i++) {
+    for(int i = thread_part * (n / MAX_THREAD); i < (thread_part + 1) * ((len - n) / MAX_THREAD); i++) {
         int j = i + len;
         if(str[i] == str[j]) {
             dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
@@ -39,10 +39,10 @@ void *helper(void *arg) {
                 dp[i * n + j] -= dp[(left + 1) * n + (right - 1)];
             }
         } else {
-            dp[i * n + j] = dp[(i + 1) * n + j] + dp[i * n + (j - 1)] - dp[(i + 1) * n + (j - 1)];
+            dp[i * n + j] = dp[i * n + (j - 1)] + dp[(i + 1) * n + j] - dp[(i + 1) * n + (j - 1)];
         }
 
-        dp[i * n + j] = (dp[i * n + j] + kMod) / kMod; // positive modulo
+        dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
     }
 }
 
