@@ -19,7 +19,7 @@ all:
 	$(CC) -o 730.out main.c $(CFLAGS)
 
 p_thread:
-	$(CC) -lpthread $(CFLAGS) main_pthread.c -o 730_pthread.out
+	$(CC) -pthread $(CFLAGS) main_pthread.c -o 730_pthread.out
 
 cuda:
 	$(NVCC) -o 730_cuda.out 730_solution.cu

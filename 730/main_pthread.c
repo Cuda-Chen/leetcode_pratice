@@ -17,7 +17,7 @@ int part; // which number of thread
 
 void *helper(void *arg) {
     int thread_part = part++;
-    for(int i = thread_part * (n / MAX_THREAD); i < (thread_part + 1) * ((len - n) / MAX_THREAD); i++) {
+    for(int i = thread_part * ((len - n) / MAX_THREAD); i < (thread_part + 1) * ((len - n) / MAX_THREAD); i++) {
         int j = i + len;
         if(str[i] == str[j]) {
             dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
@@ -64,6 +64,7 @@ int countPalindromicSubsequences(char * S){
     pthread_t threads[MAX_THREAD];
 
     for(len = 1; len <= n; len++) {
+        part = 0;
         // create n threads
         for(int i = 0; i < MAX_THREAD; i++) {
             pthread_create(&threads[i], NULL, helper, (void *)NULL);
