@@ -6,13 +6,50 @@
 
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
-#define MAX_THREAD 2
+#define MAX_THREAD 1
 
 long kMod = 1000000007;
+char *str; // input string
+int *dp; // DP array
+int n; // length of DP array
+int len; // current length
+int part; // which number of thread
+
+void *helper(void *arg) {
+    int thread_part = part++;
+    for(int i = thread_part * (n / MAX_THREAD); i < len - (thread_part + 1) * (n / MAX_THREAD); i++) {
+        int j = i + len;
+        if(str[i] == str[j]) {
+            dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
+            int left = i + 1;
+            int right = j - 1;
+
+            while(left <= right && str[left] != str[i]) {
+                left++;
+            }
+            while(left <= right && str[right] != str[i]) {
+                right--;
+            }
+
+            if(left == right) {
+                dp[i * n + j] += 1;
+            } else if(left > right) {
+                dp[i * n + j] += 2;
+            } else {
+                dp[i * n + j] -= dp[(left + 1) * n + (right - 1)];
+            }
+        } else {
+            dp[i * n + j] = dp[(i + 1) * n + j] + dp[i * n + (j - 1)] - dp[(i + 1) * n + (j - 1)];
+        }
+
+        dp[i * n + j] = (dp[i * n + j] + kMod) / kMod; // positive modulo
+    }
+}
 
 int countPalindromicSubsequences(char * S){
-    int n = strlen(S);
-    int *dp = (int *)malloc(n * n * sizeof(int));
+    n = strlen(S);
+    str = S;
+    dp = (int *)malloc(n * n * sizeof(int));
     
     // initialize the value of each element to 0
     for(int i = 0; i < n * n; i++) {
@@ -24,33 +61,17 @@ int countPalindromicSubsequences(char * S){
         dp[(i * n) + i] = 1;
     }
     
-    for(int len = 1; len <= n; len++) {
-        for(int i = 0; i < n - len; i++) {
-            int j = i + len; // jth element is the end of current string
-            if(S[i] == S[j]) { // if front and rear are the same
-                dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
-                int left = i + 1;
-                int right = j - 1;
-                
-                while(left <= right && S[left] != S[i]) {
-                    left++;
-                }
-                while(left <= right && S[right] != S[i]) {
-                    right--;
-                }
-                
-                if(left == right) {
-                    dp[(i * n) + j] += 1;
-                } else if(left > right) {
-                    dp[(i * n) + j] += 2;
-                } else {
-                    dp[(i * n) + j] -= dp[(left + 1) * n + (right - 1)];
-                }
-            } else {
-                dp[(i * n) + j] = dp[(i * n) + (j - 1)] + dp[((i + 1) * n) + j] - dp[((i + 1) * n) + (j - 1)];
-            }
-            
-            dp[(i * n) + j] = (dp[(i * n) + j] + kMod) % kMod; // perform positive modulo
+    pthread_t threads[MAX_THREAD];
+
+    for(len = 1; len <= n; len++) {
+        // create n threads
+        for(int i = 0; i < MAX_THREAD; i++) {
+            pthread_create(&threads[i], NULL, helper, (void *)NULL);
+        }
+
+        // join n threads i.e. waiting n threads to complete
+        for(int i = 0; i < MAX_THREAD; i++) {
+            pthread_join(threads[i], NULL);
         }
     }
     
