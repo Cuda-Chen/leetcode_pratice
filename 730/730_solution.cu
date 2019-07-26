@@ -16,6 +16,20 @@ inline void checkError(cudaError_t status) {
     }
 }
 
+__global__ void prepareData(int *dp, int n) {
+  for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    for(int j = blockIdx.y * blockDim.y + threadIdx.y; j < n; j+= blockDim.y * gridDim.y) {
+      dp[i * n + j] = 0;
+    }
+  }
+}
+
+__global__ void setData(int *dp, int n) {
+  for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    dp[i * n + i] = 1;
+  }
+}
+
 __global__ void helperKernel(char *S, int *dp, int n, long kMod, int len) {
   for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < n - len; i += blockDim.x * gridDim.x) {
       int j = i + len; // jth element is the end of current string
@@ -99,18 +113,6 @@ int countPalindromicSubsequences(char * S){
     int *h_dp = (int *)malloc(n * n * sizeof(int));
     int *d_dp;
     char *d_S;
-    const dim3 blockSize(1, 1);
-    const dim3 gridSize(n / blockSize.x + 1, n / blockSize.y + 1);
-
-    // initialize the value of each element to 0
-    for(int i = 0; i < n * n; i++) {
-        h_dp[i] = 0;
-    }
-    
-    // one char itself is its palindrom
-    for(int i = 0; i < n; i++) {
-        h_dp[(i * n) + i] = 1;
-    }
 
     checkError(cudaMalloc(&d_dp, n * n * sizeof(int)));
     checkError(cudaMalloc(&d_S, n * sizeof(char)));
@@ -118,9 +120,13 @@ int countPalindromicSubsequences(char * S){
     checkError(cudaMemcpy(d_dp, h_dp, n * n * sizeof(int), cudaMemcpyHostToDevice));
     checkError(cudaMemcpy(d_S, S, n * sizeof(char), cudaMemcpyHostToDevice));
 
+    const dim3 blockSize(n, n, 1);
+    prepareData<<<1, blockSize>>>(d_dp, n);
+    setData<<<1, n>>>(d_dp, n);
+
     t = clock();
     for(int len = 1; len <= n; len++) {
-        helperKernel<<<1, 1000>>>(d_S, d_dp, n, kMod, len);
+        helperKernel<<<1, n>>>(d_S, d_dp, n, kMod, len);
     }
     cudaDeviceSynchronize();
     t = clock() - t;
@@ -148,6 +154,7 @@ int main() {
     //char *input = "bccb";
     //char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
     char *input = "babbdbccbaacdbddaabdccdbacdbcdbacdaccdcbaacadbcbddbcccbbabbababdcadacdbbcbabdbaddadaababbaacddbacaaddbcaabbdbdddcbbbacbbbcbadcdadcadcdaccdcccaacadbacbaaaadcdabbbacdcbbdcbddbabacaabaadcbaaadbddbdcbbbcaacdcdbbbcdccbcdaabbddacbdcdbdcacbbdbccbccbddcacdabdcdddcbcacbadabccabaddacaaaacaabdcdbccbbdcdccbbacacaaabcdddaaaabcdbaccddabcaabcaaacacaddccbdddabbcbcaacbdcacddbdcbddbaccadbdacbaccabccdcdadacbdaccccbbccaadabacdbcbdcbadddcbcbcdbdbcdabcaacdcbbdbbbbaddbcdaaacabacaddaaccccbadbacbcbdcdacbbdbaaccdcddbcbdbbbbcbbbaaadbdbdbcbdabaacccccbddbbcccaadcbdcaacacccbcdddcbcbdacbbccdbaadddaacccbcbdadacdcdcacdccabbbdaabacdadccdadbdbcbbdcbcabdcbdccbbadbddbbbbddadbabdccbbdcbacabbbcabbcdbcabdbdbabcbddaaacacadcbcbadbdabbbddcbcbdcaacabcdbccddacbcaccadcdccaaaababccaaacbcaaaccdcaacdabddbbcbbbcccaccdaccdcbabbbdddccbcadddaaabdabacddacdbbaacbdbacaaacaaabbbcaaccddccddacabadbddcddadbbccadcdcaaccddbdabbdbddacabaacccdbdbdaccabbbcadbccccdaabbcbaacacccdcbcbabaadcbacaacbbcbccbdcdacdacddcbccdcaccaabcdbacbbdcbadabcccadadddbcaca";
+    printf("input string length: %d\n", strlen(input));
     //clock_t t;
     //t = clock();
     int result = countPalindromicSubsequences(input);
