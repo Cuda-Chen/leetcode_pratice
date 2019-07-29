@@ -28,7 +28,7 @@ opencl:
 	$(CC) -o 730_cl.out main_cl.c $(LIBS)
 
 opencl_me:
-	$(CC) -o 730_cl.out main_cl.c $(LIBS) -L/usr/local/cuda-9.0/lib64
+	$(CC) -g -o 730_cl.out main_cl.c $(LIBS) -L/usr/local/cuda-9.0/lib64
 
 clean:
 	rm -rf *.o

@@ -6,7 +6,7 @@
 
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
-#define MAX_THREAD 1
+#define MAX_THREAD 2
 
 long kMod = 1000000007;
 char *str; // input string
@@ -16,7 +16,7 @@ int len; // current length
 int part; // which number of thread
 
 void *helper(void *arg) {
-    int thread_part = part++;
+    int thread_part = *(int *)arg;
     for(int i = thread_part * ((len - n) / MAX_THREAD); i < (thread_part + 1) * ((len - n) / MAX_THREAD); i++) {
         int j = i + len;
         if(str[i] == str[j]) {
@@ -44,6 +44,7 @@ void *helper(void *arg) {
 
         dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
     }
+    pthread_exit(0);
 }
 
 int countPalindromicSubsequences(char * S){
@@ -67,12 +68,14 @@ int countPalindromicSubsequences(char * S){
         part = 0;
         // create n threads
         for(int i = 0; i < MAX_THREAD; i++) {
-            pthread_create(&threads[i], NULL, helper, (void *)NULL);
+            pthread_create(&threads[i], NULL, helper, (void *)&i);
+            printf("len %d thread %d created\n", len, i);
         }
 
         // join n threads i.e. waiting n threads to complete
         for(int i = 0; i < MAX_THREAD; i++) {
             pthread_join(threads[i], NULL);
+            printf("len %d thread %d joined\n", len, i);
         }
     }
     

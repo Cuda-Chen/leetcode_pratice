@@ -1,4 +1,4 @@
-__kernel void helperKernel(__global *S, __global *dp, int n, long kMod, int len) {
+__kernel void helperKernel(__global char *S, __global int *dp, int n, long kMod, int len) {
     int i = get_global_id(0);
 
     if(i < n - len) {
@@ -9,10 +9,10 @@ __kernel void helperKernel(__global *S, __global *dp, int n, long kMod, int len)
             int left = i + 1;
             int right = j - 1;
 
-            while(left <= right && S[left] == S[i]) {
+            while(left <= right && S[left] != S[i]) {
                 left++;
             }
-            while(left <= right && S[right] == S[i]) {
+            while(left <= right && S[right] != S[i]) {
                 right--;
             }
 

@@ -143,15 +143,15 @@ int countPalindromicSubsequences(char * S){
 
     // OpenCL part
     int *h_dp = (int *)malloc(n * n * sizeof(int));
-    int *d_dp;
-    char *d_S;
+    //int *d_dp;
+    //char *d_S;
 
     for(int i = 0; i < n * n; i++) {
-        dp[i] = 0;
+        h_dp[i] = 0;
     }
 
     for(int i = 0; i < n; i++) {
-        dp[i * n + i] = 1;
+        h_dp[i * n + i] = 1;
     }
 
     // OpenCL initialization
@@ -167,7 +167,7 @@ int countPalindromicSubsequences(char * S){
     err = clGetPlatformIDs(1, &cpPlatform, NULL);
     if(err != CL_SUCCESS)
     {       
-        cerr << getErrorString(err) << endl;
+        printf("%s\n", getErrorString(err));
         exit(1);
     }
 
@@ -175,7 +175,7 @@ int countPalindromicSubsequences(char * S){
     err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if(err != CL_SUCCESS)
     {
-        cerr << getErrorString(err) << endl;
+        printf("%s\n", getErrorString(err));
         exit(1);
     }
 
@@ -183,7 +183,7 @@ int countPalindromicSubsequences(char * S){
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if(err != CL_SUCCESS)
     {
-        cerr << getErrorString(err) << endl;
+        printf("%s\n", getErrorString(err));
         exit(1);
     }
 
@@ -191,121 +191,129 @@ int countPalindromicSubsequences(char * S){
     queue = clCreateCommandQueue(context, device_id, 0, &err);
     if(err != CL_SUCCESS)
     {
-        cerr << getErrorString(err) << endl;
+        printf("%s\n", getErrorString(err));
         exit(1);
     }
-// create the compute program from source buffer
-        FILE *fp;
-        char *source_str;
-        size_t source_size;
-        const char *kernel_code = "gaussian.cl";
-        fp = fopen(kernel_code, "r");
-        if(!fp)
-        {
-                cerr << "error reading " << kernel_code << endl;
-                exit(1);
-        }
-        source_str = (char *)malloc(MAX_SOURCE_SIZE);
-        source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
-        fclose(fp);
-        program = clCreateProgramWithSource(context, 1, (const char **)&source_str,
-                        (const size_t *)&source_size, &err);
-        if(err != CL_SUCCESS)
-        {
-                cerr << getErrorString(err) << endl;
-                exit(1);
-        }
+    // create the compute program from source buffer
+    FILE *fp;
+    char *source_str;
+    size_t source_size;
+    const char *kernel_code = "helperKernel_cl.cl";
+    fp = fopen(kernel_code, "r");
+    if(!fp)
+    {
+        printf("error reading %s\n", kernel_code);
+        exit(1);
+    }
+    source_str = (char *)malloc(MAX_SOURCE_SIZE);
+    source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
+    fclose(fp);
+    program = clCreateProgramWithSource(context, 1, (const char **)&source_str,
+    		(const size_t *)&source_size, &err);
+    if(err != CL_SUCCESS)
+    {
+        printf("%s\n", getErrorString(err));
+        exit(1);
+    }
 
-        // build program
-        err = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
-        if(err != CL_SUCCESS)
-        {
-                cerr << "error building program" << endl;
-                cerr << "Error type: " << getErrorString(err) << endl;
-                char build_log[10000];
-                cl_int error2;
-                error2 =  clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 10000, build_log, NULL);
-                cerr << "log:" << endl << build_log << endl;
-                exit(1);
-        }
-        // create kernel
-        kernel = clCreateKernel(program, "gaussian", &err);
-        if(!kernel || err != CL_SUCCESS)
-        {       
-                cerr << getErrorString(err) << endl;
-                exit(1);
-        }
+    // build program
+    err = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+    if(err != CL_SUCCESS)
+    {
+        printf("error building program\n");
+        printf("Error type: %s\n", getErrorString(err));
+	char build_log[10000];
+	cl_int error2;
+	error2 =  clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 10000, build_log, NULL);
+        printf("log: %s\n", build_log);
+       	exit(1);
+    }
+    // create kernel
+    kernel = clCreateKernel(program, "helperKernel", &err);
+    if(!kernel || err != CL_SUCCESS)
+    {       
+        printf("%s\n", getErrorString(err));
+        exit(1);
+    }
 
-        // stuffs will be loaded to device
-        cl_mem d_src = clCreateBuffer(context, CL_MEM_READ_ONLY, height * width * sizeof(unsigned char),
-                NULL, NULL);
-        cl_mem d_dst = clCreateBuffer(context, CL_MEM_READ_WRITE, height * width * sizeof(unsigned char),
-                NULL, NULL);
-        cl_mem d_gaussianKernel = clCreateBuffer(context, CL_MEM_READ_ONLY, kernelHeight * kernelWidth * sizeof(double),
-                NULL, NULL);
+    // stuffs will be loaded to device
+    cl_mem d_S = clCreateBuffer(context, CL_MEM_READ_ONLY, n * sizeof(char),
+    	NULL, NULL);
+    cl_mem d_dp = clCreateBuffer(context, CL_MEM_READ_WRITE, n * n * sizeof(int),
+    	NULL, NULL);
 
-        // write input/output data to device
-        err = clEnqueueWriteBuffer(queue, d_src, CL_TRUE, 0, height * width * sizeof(unsigned char),
-                src, 0, NULL, NULL);
-        err |= clEnqueueWriteBuffer(queue, d_dst, CL_TRUE, 0, height * width * sizeof(unsigned char),
-                dst, 0, NULL, NULL);
-        err |= clEnqueueWriteBuffer(queue, d_gaussianKernel, CL_TRUE, 0, kernelHeight * kernelWidth * sizeof(double),
-                gaussianKernel, 0, NULL, NULL);
-        if(err != CL_SUCCESS)
-        {
-                cerr << getErrorString(err) << endl;
-                exit(1);
-        }
+    // write input/output data to device
+    err = clEnqueueWriteBuffer(queue, d_S, CL_TRUE, 0, n * sizeof(char),
+    	S, 0, NULL, NULL);
+    err |= clEnqueueWriteBuffer(queue, d_dp, CL_TRUE, 0, n * n * sizeof(int),
+    	h_dp, 0, NULL, NULL);
+    if(err != CL_SUCCESS)
+    {
+        printf("%s\n", getErrorString(err));
+        exit(1);
+    }
 
+  
+    for(int len = 1; len <= n; len++) {
         // set the arguments to our compute kernel
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_src);
-        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_dst);
-        err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_gaussianKernel);
-        err |= clSetKernelArg(kernel, 3, sizeof(int), &width);
-        err |= clSetKernelArg(kernel, 4, sizeof(int), &height);
-        err |= clSetKernelArg(kernel, 5, sizeof(int), &kernelWidth);
-        err |= clSetKernelArg(kernel, 6, sizeof(int), &kernelHeight);
-        err |= clSetKernelArg(kernel, 7, sizeof(double), &sigma);
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_S);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_dp);
+        err |= clSetKernelArg(kernel, 2, sizeof(int), &n); 
+        err |= clSetKernelArg(kernel, 3, sizeof(long), &kMod); 
+        err |= clSetKernelArg(kernel, 4, sizeof(int), &len);
         if(err != CL_SUCCESS)
         {
-                cerr << getErrorString(err);
-                exit(1);
+            printf("Error: clSetKernelArg failed\n");
+ 	    printf("%s\n", getErrorString(err));
+	    exit(1);
         }
 
         // execute our compute kernel
-        size_t global_item_size[2] = {(size_t)height, (size_t)width};
-        err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, NULL,
-                0, NULL, NULL);
+        size_t global_item_size[1] = {(size_t)n}; // process the whole dp array
+        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_item_size, NULL,
+    	0, NULL, NULL);
         if(err != CL_SUCCESS)
         {
-                cerr << getErrorString(err) << endl;
-                exit(1);
+	        printf("%s\n", getErrorString(err));
+	        exit(1);
         }
-        
-        err = clEnqueueReadBuffer(queue, d_dst, CL_TRUE, 0, height * width * sizeof(unsigned char),
-                dst, 0, NULL, NULL);
-        
-        // wait till our compute kernel is complete
-        clFinish(queue);
-        
-        // release OpenCL objects
-        clReleaseMemObject(d_src);
-        clReleaseMemObject(d_dst);
-        clReleaseMemObject(d_gaussianKernel);
-        clReleaseProgram(program);
-        clReleaseKernel(kernel);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);      
-                
-        // release host objects
-        free(source_str);
+  
+    }
+
+    err = clEnqueueReadBuffer(queue, d_dp, CL_TRUE, 0, n * n * sizeof(unsigned char),
+        h_dp, 0, NULL, NULL);
+
+    // wait till our compute kernel is complete
+    clFinish(queue);
+
+    // release OpenCL objects
+    clReleaseMemObject(d_dp);
+    clReleaseMemObject(d_S);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseCommandQueue(queue);
+    clReleaseContext(context);      
+		
+    // release host objects
+    free(source_str);
+
+    for(int i = 0; i < n * n; i++) {
+        if(h_dp[i] != dp[i]) {
+            puts("result of GPU is inconsistant to CPU");
+            break;
+        }
+    }
+    printf("value of h_dp[0][n - 1]: %d\n", h_dp[(0 * n) + (n - 1)]);
+    free(h_dp);
 
     return dp[(0 * n) + (n - 1)];
 }
 
 int main() {
-    char *input = "bccb";
+    //char *input = "bccb";
     //char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
+    char *input = "babbdbccbaacdbddaabdccdbacdbcdbacdaccdcbaacadbcbddbcccbbabbababdcadacdbbcbabdbaddadaababbaacddbacaaddbcaabbdbdddcbbbacbbbcbadcdadcadcdaccdcccaacadbacbaaaadcdabbbacdcbbdcbddbabacaabaadcbaaadbddbdcbbbcaacdcdbbbcdccbcdaabbddacbdcdbdcacbbdbccbccbddcacdabdcdddcbcacbadabccabaddacaaaacaabdcdbccbbdcdccbbacacaaabcdddaaaabcdbaccddabcaabcaaacacaddccbdddabbcbcaacbdcacddbdcbddbaccadbdacbaccabccdcdadacbdaccccbbccaadabacdbcbdcbadddcbcbcdbdbcdabcaacdcbbdbbbbaddbcdaaacabacaddaaccccbadbacbcbdcdacbbdbaaccdcddbcbdbbbbcbbbaaadbdbdbcbdabaacccccbddbbcccaadcbdcaacacccbcdddcbcbdacbbccdbaadddaacccbcbdadacdcdcacdccabbbdaabacdadccdadbdbcbbdcbcabdcbdccbbadbddbbbbddadbabdccbbdcbacabbbcabbcdbcabdbdbabcbddaaacacadcbcbadbdabbbddcbcbdcaacabcdbccddacbcaccadcdccaaaababccaaacbcaaaccdcaacdabddbbcbbbcccaccdaccdcbabbbdddccbcadddaaabdabacddacdbbaacbdbacaaacaaabbbcaaccddccddacabadbddcddadbbccadcdcaaccddbdabbdbddacabaacccdbdbdaccabbbcadbccccdaabbcbaacacccdcbcbabaadcbacaacbbcbccbdcdacdacddcbccdcaccaabcdbacbbdcbadabcccadadddbcaca";
+
     clock_t t;
     t = clock();
     int result = countPalindromicSubsequences(input);
