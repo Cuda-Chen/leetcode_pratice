@@ -166,7 +166,8 @@ int countPalindromicSubsequences(char * S){
         // get all platforms
     err = clGetPlatformIDs(1, &cpPlatform, NULL);
     if(err != CL_SUCCESS)
-    {       
+    {
+        printf("Error: clGetPlatformIDs\n");       
         printf("%s\n", getErrorString(err));
         exit(1);
     }
@@ -175,6 +176,7 @@ int countPalindromicSubsequences(char * S){
     err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if(err != CL_SUCCESS)
     {
+        printf("Error: clGetDeviceIDs\n");
         printf("%s\n", getErrorString(err));
         exit(1);
     }
@@ -183,6 +185,7 @@ int countPalindromicSubsequences(char * S){
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if(err != CL_SUCCESS)
     {
+        printf("Error: clCreateContext\n");
         printf("%s\n", getErrorString(err));
         exit(1);
     }
@@ -191,6 +194,7 @@ int countPalindromicSubsequences(char * S){
     queue = clCreateCommandQueue(context, device_id, 0, &err);
     if(err != CL_SUCCESS)
     {
+        printf("clCreateCommandQueue\n");
         printf("%s\n", getErrorString(err));
         exit(1);
     }
@@ -232,6 +236,7 @@ int countPalindromicSubsequences(char * S){
     kernel = clCreateKernel(program, "helperKernel", &err);
     if(!kernel || err != CL_SUCCESS)
     {       
+        printf("Error: clCreateKernel\n");
         printf("%s\n", getErrorString(err));
         exit(1);
     }
@@ -245,15 +250,23 @@ int countPalindromicSubsequences(char * S){
     // write input/output data to device
     err = clEnqueueWriteBuffer(queue, d_S, CL_TRUE, 0, n * sizeof(char),
     	S, 0, NULL, NULL);
-    err |= clEnqueueWriteBuffer(queue, d_dp, CL_TRUE, 0, n * n * sizeof(int),
+    if(err != CL_SUCCESS)
+    {
+        printf("Error: clEnqueueWriteBuffer d_S\n");
+        printf("%s\n", getErrorString(err));
+        exit(1);
+    }
+    err = clEnqueueWriteBuffer(queue, d_dp, CL_TRUE, 0, n * n * sizeof(int),
     	h_dp, 0, NULL, NULL);
     if(err != CL_SUCCESS)
     {
+        printf("Error: clEnqueueWriteBuffer d_dp\n");
         printf("%s\n", getErrorString(err));
         exit(1);
     }
 
-  
+
+    t = clock();  
     for(int len = 1; len <= n; len++) {
         // set the arguments to our compute kernel
         err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_S);
@@ -279,6 +292,8 @@ int countPalindromicSubsequences(char * S){
         }
   
     }
+    t = clock() - t;
+    printf("execution time: %f\n", ((float)t / CLOCKS_PER_SEC));
 
     err = clEnqueueReadBuffer(queue, d_dp, CL_TRUE, 0, n * n * sizeof(unsigned char),
         h_dp, 0, NULL, NULL);
@@ -304,6 +319,10 @@ int countPalindromicSubsequences(char * S){
         }
     }
     printf("value of h_dp[0][n - 1]: %d\n", h_dp[(0 * n) + (n - 1)]);
+    if(h_dp[0 * n + (n - 1)] == dp[0 * n + (n - 1)])
+    {
+        printf("answer of GPU is consistant to CPU\n");
+    }
     free(h_dp);
 
     return dp[(0 * n) + (n - 1)];
