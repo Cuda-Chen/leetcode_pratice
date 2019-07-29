@@ -17,7 +17,12 @@ int part; // which number of thread
 
 void *helper(void *arg) {
     int thread_part = *(int *)arg;
-    for(int i = thread_part * ((len - n) / MAX_THREAD); i < (thread_part + 1) * ((len - n) / MAX_THREAD); i++) {
+
+    int start_num = ((len - n) / MAX_THREAD) * thread_part;
+    int end_num = ((len - n) / MAX_THREAD) * (thread_part + 1);
+
+    for(int i = start_num; i < end_num; i++) {
+        printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_part, start_num, end_num);
         int j = i + len;
         if(str[i] == str[j]) {
             dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
