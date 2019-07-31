@@ -3,10 +3,11 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
-#define MAX_THREAD 2
+#define MAX_THREAD 1
 
 long kMod = 1000000007;
 char *str; // input string
@@ -16,13 +17,15 @@ int len; // current length
 int part; // which number of thread
 
 void *helper(void *arg) {
-    int thread_part = *(int *)arg;
+    //int thread_part = *(int *)arg;
+    int thread_part = (int)arg;
 
-    int start_num = ((len - n) / MAX_THREAD) * thread_part;
-    int end_num = ((len - n) / MAX_THREAD) * (thread_part + 1);
+    int start_num = ((n - len) / MAX_THREAD) * thread_part;
+    int end_num = ((n - len) / MAX_THREAD) * (thread_part + 1);
 
     for(int i = start_num; i < end_num; i++) {
         printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_part, start_num, end_num);
+        //sleep(1);
         int j = i + len;
         if(str[i] == str[j]) {
             dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
@@ -49,7 +52,8 @@ void *helper(void *arg) {
 
         dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
     }
-    pthread_exit(0);
+    //sleep(1);
+    pthread_exit(NULL);
 }
 
 int countPalindromicSubsequences(char * S){
@@ -73,15 +77,24 @@ int countPalindromicSubsequences(char * S){
         part = 0;
         // create n threads
         for(int i = 0; i < MAX_THREAD; i++) {
-            pthread_create(&threads[i], NULL, helper, (void *)&i);
-            printf("len %d thread %d created\n", len, i);
+            int res = pthread_create(&(threads[i]), NULL, helper, (void *)i);
+            //printf("len %d thread %d created\n", len, i);
+            if(res != 0) {
+                perror("thread creation failed");
+                exit(EXIT_FAILURE);
+            }
         }
+        //puts("after pthread_create");
 
         // join n threads i.e. waiting n threads to complete
         for(int i = 0; i < MAX_THREAD; i++) {
-            pthread_join(threads[i], NULL);
-            printf("len %d thread %d joined\n", len, i);
+            int res = pthread_join(threads[i], NULL);
+            //printf("len %d thread %d joined\n", len, i);
+            if(res != 0) {
+                perror("thread join failed");
+            }
         }
+        //puts("after pthread_join");
     }
     
     return dp[(0 * n) + (n - 1)];

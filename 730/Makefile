@@ -1,6 +1,7 @@
 CC = gcc
 NVCC = nvcc
-CFLAGS = -std=c99
+#CFLAGS = -std=c99
+CFLAGS = -g
 
 # OpenCL settings
 UNAME := $(shell uname)
