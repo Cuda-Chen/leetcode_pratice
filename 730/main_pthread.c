@@ -7,7 +7,7 @@
 
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
-#define MAX_THREAD 1
+#define MAX_THREAD 12
 
 long kMod = 1000000007;
 char *str; // input string
@@ -15,16 +15,26 @@ int *dp; // DP array
 int n; // length of DP array
 int len; // current length
 int part; // which number of thread
+//pthread_mutex_t work_mutex;
 
 void *helper(void *arg) {
+    //pthread_mutex_lock(&work_mutex);
     //int thread_part = *(int *)arg;
-    int thread_part = (int)arg;
+    int thread_id = (int)arg;
 
-    int start_num = ((n - len) / MAX_THREAD) * thread_part;
-    int end_num = ((n - len) / MAX_THREAD) * (thread_part + 1);
+    int m = n - len;
+    int start_num;
+    int end_num;
+    if(thread_id == MAX_THREAD - 1) {
+        start_num = (m / MAX_THREAD) * thread_id;
+        end_num = (m / MAX_THREAD) * (thread_id + 1) + (m % MAX_THREAD);
+    } else {
+        start_num = (m / MAX_THREAD) * thread_id;
+        end_num = (m / MAX_THREAD) * (thread_id + 1);
+    }
 
     for(int i = start_num; i < end_num; i++) {
-        printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_part, start_num, end_num);
+        //printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_id, start_num, end_num);
         //sleep(1);
         int j = i + len;
         if(str[i] == str[j]) {
@@ -53,6 +63,7 @@ void *helper(void *arg) {
         dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
     }
     //sleep(1);
+    //pthread_mutex_unlock(&work_mutex);
     pthread_exit(NULL);
 }
 
@@ -72,12 +83,20 @@ int countPalindromicSubsequences(char * S){
     }
     
     pthread_t threads[MAX_THREAD];
+    int res;
+
+    // initialize mutex
+    /*res = pthread_mutex_init(&work_mutex, NULL);
+    if(res != 0) {
+        perror("mutex initialization failed");
+        exit(EXIT_FAILURE);
+    }*/
 
     for(len = 1; len <= n; len++) {
         part = 0;
         // create n threads
         for(int i = 0; i < MAX_THREAD; i++) {
-            int res = pthread_create(&(threads[i]), NULL, helper, (void *)i);
+            res = pthread_create(&(threads[i]), NULL, helper, (void *)i);
             //printf("len %d thread %d created\n", len, i);
             if(res != 0) {
                 perror("thread creation failed");
@@ -88,7 +107,7 @@ int countPalindromicSubsequences(char * S){
 
         // join n threads i.e. waiting n threads to complete
         for(int i = 0; i < MAX_THREAD; i++) {
-            int res = pthread_join(threads[i], NULL);
+            res = pthread_join(threads[i], NULL);
             //printf("len %d thread %d joined\n", len, i);
             if(res != 0) {
                 perror("thread join failed");
@@ -101,8 +120,8 @@ int countPalindromicSubsequences(char * S){
 }
 
 int main() {
-    char *input = "bccb";
-    //char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
+    //char *input = "bccb";
+    char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
     clock_t t;
     t = clock();
     int result = countPalindromicSubsequences(input);
