@@ -17,10 +17,10 @@ endif
 .PHONY: all p_thread cuda opencl opencl_me clean
 
 all:
-	$(CC) -o 730.out main.c $(CFLAGS)
+	$(CC) -std=c99 -o 730.out main.c $(CFLAGS)
 
 p_thread:
-	$(CC) -pthread $(CFLAGS) main_pthread.c -o 730_pthread.out
+	$(CC) -D_POSIX_C_SOURCE=199309L -std=c99 -pthread $(CFLAGS) main_pthread.c -o 730_pthread.out
 
 cuda:
 	$(NVCC) -o 730_cuda.out 730_solution.cu
