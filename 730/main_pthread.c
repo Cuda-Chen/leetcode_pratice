@@ -4,6 +4,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
@@ -14,24 +15,20 @@ char *str; // input string
 int *dp; // DP array
 int n; // length of DP array
 int len; // current length
-int part; // which number of thread
-//pthread_mutex_t work_mutex;
+
+typedef struct Argu {
+    int low;
+    int high;
+    double time;
+} Argu;
 
 void *helper(void *arg) {
     //pthread_mutex_lock(&work_mutex);
     //int thread_part = *(int *)arg;
-    int thread_id = (int)arg;
+    Argu data = *((Argu *)arg);
 
-    int m = n - len;
-    int start_num;
-    int end_num;
-    if(thread_id == MAX_THREAD - 1) {
-        start_num = (m / MAX_THREAD) * thread_id;
-        end_num = (m / MAX_THREAD) * (thread_id + 1) + (m % MAX_THREAD);
-    } else {
-        start_num = (m / MAX_THREAD) * thread_id;
-        end_num = (m / MAX_THREAD) * (thread_id + 1);
-    }
+    int start_num = data.low;
+    int end_num = data.high; 
 
     for(int i = start_num; i < end_num; i++) {
         //printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_id, start_num, end_num);
@@ -62,8 +59,7 @@ void *helper(void *arg) {
 
         dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
     }
-    //sleep(1);
-    //pthread_mutex_unlock(&work_mutex);
+
     pthread_exit(NULL);
 }
 
@@ -92,11 +88,23 @@ int countPalindromicSubsequences(char * S){
         exit(EXIT_FAILURE);
     }*/
 
+    struct timespec start, finish;
+    double elapsed;
+    clock_gettime(CLOCK_MONOTONIC, &start);
     for(len = 1; len <= n; len++) {
-        part = 0;
         // create n threads
         for(int i = 0; i < MAX_THREAD; i++) {
-            res = pthread_create(&(threads[i]), NULL, helper, (void *)i);
+            Argu *argu = (Argu *)malloc(sizeof(Argu));
+            int m = n - len;
+            if(i == MAX_THREAD - 1) {
+                argu->low = (m / MAX_THREAD) * i;
+                argu->high = (m / MAX_THREAD) * (i + 1) + (m % MAX_THREAD);
+            } else {
+               argu->low = (m / MAX_THREAD) * i;
+               argu->high = (m / MAX_THREAD) * (i + 1);
+            }
+            argu->time = 0;
+            res = pthread_create(&(threads[i]), NULL, helper, (void *)argu);
             //printf("len %d thread %d created\n", len, i);
             if(res != 0) {
                 perror("thread creation failed");
@@ -115,6 +123,10 @@ int countPalindromicSubsequences(char * S){
         }
         //puts("after pthread_join");
     }
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("execution time: %f with %d threads\n", elapsed, MAX_THREAD);
     
     return dp[(0 * n) + (n - 1)];
 }
@@ -123,14 +135,7 @@ int main() {
     //char *input = "bccb";
     //char *input = "abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba";
     char *input = "babbdbccbaacdbddaabdccdbacdbcdbacdaccdcbaacadbcbddbcccbbabbababdcadacdbbcbabdbaddadaababbaacddbacaaddbcaabbdbdddcbbbacbbbcbadcdadcadcdaccdcccaacadbacbaaaadcdabbbacdcbbdcbddbabacaabaadcbaaadbddbdcbbbcaacdcdbbbcdccbcdaabbddacbdcdbdcacbbdbccbccbddcacdabdcdddcbcacbadabccabaddacaaaacaabdcdbccbbdcdccbbacacaaabcdddaaaabcdbaccddabcaabcaaacacaddccbdddabbcbcaacbdcacddbdcbddbaccadbdacbaccabccdcdadacbdaccccbbccaadabacdbcbdcbadddcbcbcdbdbcdabcaacdcbbdbbbbaddbcdaaacabacaddaaccccbadbacbcbdcdacbbdbaaccdcddbcbdbbbbcbbbaaadbdbdbcbdabaacccccbddbbcccaadcbdcaacacccbcdddcbcbdacbbccdbaadddaacccbcbdadacdcdcacdccabbbdaabacdadccdadbdbcbbdcbcabdcbdccbbadbddbbbbddadbabdccbbdcbacabbbcabbcdbcabdbdbabcbddaaacacadcbcbadbdabbbddcbcbdcaacabcdbccddacbcaccadcdccaaaababccaaacbcaaaccdcaacdabddbbcbbbcccaccdaccdcbabbbdddccbcadddaaabdabacddacdbbaacbdbacaaacaaabbbcaaccddccddacabadbddcddadbbccadcdcaaccddbdabbdbddacabaacccdbdbdaccabbbcadbccccdaabbcbaacacccdcbcbabaadcbacaacbbcbccbdcdacdacddcbccdcaccaabcdbacbbdcbadabcccadadddbcaca";
-    struct timespec start, finish;
-    double elapsed;
-    clock_gettime(CLOCK_MONOTONIC, &start);
     int result = countPalindromicSubsequences(input);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    printf("execution time: %f with %d threads\n", elapsed, MAX_THREAD);
     printf("Output: %d\n", result);
     return 0;
 }
