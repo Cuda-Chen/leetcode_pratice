@@ -32,44 +32,45 @@ void *helper(void *arg) {
     int res;
 
     for(int len = 1; len <= n; len++) {
-
-    int m = n - len;
-    if(thread_id == MAX_THREAD - 1) {
-         start_num = (m / MAX_THREAD) * thread_id;
-         end_num = (m / MAX_THREAD) * (thread_id + 1) + (m % MAX_THREAD);
-    } else {
-         start_num = (m / MAX_THREAD) * thread_id;
-         end_num = (m / MAX_THREAD) * (thread_id + 1);
-    }
-    for(int i = start_num; i < end_num; i++) {
-        //printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_id, start_num, end_num);
-        //sleep(1);
-        int j = i + len;
-        if(str[i] == str[j]) {
-            dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
-            int left = i + 1;
-            int right = j - 1;
-
-            while(left <= right && str[left] != str[i]) {
-                left++;
-            }
-            while(left <= right && str[right] != str[i]) {
-                right--;
-            }
-
-            if(left == right) {
-                dp[i * n + j] += 1;
-            } else if(left > right) {
-                dp[i * n + j] += 2;
-            } else {
-                dp[i * n + j] -= dp[(left + 1) * n + (right - 1)];
-            }
+        int m = n - len;
+        if(thread_id == MAX_THREAD - 1) {
+            start_num = (m / MAX_THREAD) * thread_id;
+            end_num = (m / MAX_THREAD) * (thread_id + 1) + (m % MAX_THREAD);
         } else {
-            dp[i * n + j] = dp[i * n + (j - 1)] + dp[(i + 1) * n + j] - dp[(i + 1) * n + (j - 1)];
+            start_num = (m / MAX_THREAD) * thread_id;
+            end_num = (m / MAX_THREAD) * (thread_id + 1);
         }
 
-        dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
-    }
+	for(int i = start_num; i < end_num; i++) {
+	    //printf("I'm thread[%d], start_num:%d, end_num:%d\n", thread_id, start_num, end_num);
+	    //sleep(1);
+	    int j = i + len;
+	    if(str[i] == str[j]) {
+		dp[i * n + j] = dp[(i + 1) * n + (j - 1)] * 2;
+		int left = i + 1;
+		int right = j - 1;
+
+		while(left <= right && str[left] != str[i]) {
+		    left++;
+		}
+		while(left <= right && str[right] != str[i]) {
+		    right--;
+		}
+
+		if(left == right) {
+		    dp[i * n + j] += 1;
+		} else if(left > right) {
+		    dp[i * n + j] += 2;
+		} else {
+		    dp[i * n + j] -= dp[(left + 1) * n + (right - 1)];
+		}
+	    } else {
+		dp[i * n + j] = dp[i * n + (j - 1)] + dp[(i + 1) * n + j] - dp[(i + 1) * n + (j - 1)];
+	    }
+
+	    dp[i * n + j] = (dp[i * n + j] + kMod) % kMod; // positive modulo
+	}
+
         res = pthread_barrier_wait(&barrier);
         if (res != 0 && res != PTHREAD_BARRIER_SERIAL_THREAD) {
 	    	printf("Error could not wait on barrier\n");
