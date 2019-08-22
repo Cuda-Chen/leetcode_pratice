@@ -14,13 +14,16 @@ ifeq ($(UNAME), Darwin)
 LIBS += -framework OpenCL
 endif
 
-.PHONY: all p_thread cuda opencl opencl_me clean
+.PHONY: all p_thread p_thread_barrier cuda opencl opencl_me clean
 
 all:
 	$(CC) -std=c99 -o 730.out main.c $(CFLAGS)
 
 p_thread:
 	$(CC) -D_POSIX_C_SOURCE=199309L -std=c99 -pthread $(CFLAGS) main_pthread.c -o 730_pthread.out
+
+p_thread_barrier:
+	$(CC) -pthread $(CFLAGS) main_pthread_barrier.c -o 730_pthread_barrier.out
 
 cuda:
 	$(NVCC) -o 730_cuda.out 730_solution.cu
