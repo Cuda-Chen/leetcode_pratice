@@ -124,13 +124,22 @@ int countPalindromicSubsequences(char * S){
     prepareData<<<1, blockSize>>>(d_dp, n);
     setData<<<1, n>>>(d_dp, n);
 
-    t = clock();
+    cudaEvent_t start, stop;
+    float elapsedTime;
+    checkError(cudaEventCreate(&start));
+    checkError(cudaEventCreate(&stop));
+
+    checkError(cudaEventRecord(start, 0));
     for(int len = 1; len <= n; len++) {
         helperKernel<<<1, n>>>(d_S, d_dp, n, kMod, len);
     }
-    cudaDeviceSynchronize();
-    t = clock() - t;
-    printf("execution time: %f\n", ((float)t / CLOCKS_PER_SEC));
+    checkError(cudaDeviceSynchronize());
+    checkError(cudaEventRecord(stop, 0));
+    checkError(cudaEventSynchronize(stop));
+    checkError(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("execution time: %f\n", (elapsedTime / 1000.0));
+    checkError(cudaEventDestroy(start));
+    checkError(cudaEventDestroy(stop));
 
     checkError(cudaMemcpy(h_dp, d_dp, n * n * sizeof(int), cudaMemcpyDeviceToHost));
 
