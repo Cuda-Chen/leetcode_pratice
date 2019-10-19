@@ -15,8 +15,6 @@ def add_two_numbers(l1, l2)
     carry = 0
     
     while l1 || l2
-        val1 = l1 ? l1.val : 0
-        val2 = l2 ? l2.val : 0
         sum = carry
         if l1 
             sum += l1.val
