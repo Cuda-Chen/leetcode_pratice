@@ -1,13 +1,5 @@
 # two pointers
 
-def max(a, b)
-    return a > b ? a : b
-end
-
-def min(a,b)
-    return a < b ? a : b
-end
-
 # @param {Integer[]} height
 # @return {Integer}
 def max_area(height)
@@ -16,7 +8,7 @@ def max_area(height)
     right = height.size - 1
     
     while left < right
-        result = max result, min(height[left], height[right]) * (right - left)
+        result = [result, [height[left], height[right]].min * (right - left)].max
         
         if height[left] < height[right]
             left += 1
