@@ -8,15 +8,13 @@ def two_sum(nums, target)
     result = Array.new
     hash_table = {}
     
-    n.times do |i|
+    nums.each_with_index do |n, i|
         complement = target - nums[i]
-        if hash_table.has_key?(complement)
-            result << hash_table[complement]
-            result << i
-        else
-            hash_table[nums[i]] = i
+        return hash_table[complement], i if hash_table.has_key? complement
+            
+        hash_table[nums[i]] = i
         end
     end
     
-    return result
+    result
 end
