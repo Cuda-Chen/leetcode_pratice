@@ -6,10 +6,10 @@
 def two_sum(nums, target)
     hash_table = {}
     
-    nums.each_with_index do |n, i|
-        complement = target - nums[i]
+    nums.each_with_index do |num, i|
+        complement = target - num
         return hash_table[complement], i if hash_table.has_key? complement
 
-        hash_table[nums[i]] = i
+        hash_table[num] = i
     end
 end
