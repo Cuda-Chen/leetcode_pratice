@@ -8,74 +8,35 @@
 
 
 struct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2){
-    struct ListNode *result = NULL;
-    struct ListNode *l1Ptr, *l2Ptr, *current;
-    l1Ptr = l1;
-    l2Ptr = l2;
-    int carry = 0;
+    struct ListNode *dummy = (struct ListNode *)malloc(sizeof(struct ListNode));
+    dummy->val = 0;
+    struct ListNode *result = dummy;
     int sum = 0;
-    int remain = 0;
     
-    if(l1 == NULL || l2 == NULL) {
-        return (l1 == NULL) ? l2 : l1;
-    }
-    
-    while(l1Ptr != NULL && l2Ptr != NULL) {
-        struct ListNode *temp = (struct ListNode *)malloc(sizeof(struct ListNode));
-        sum = l1Ptr->val + l2Ptr->val + carry;
-        carry = sum / 10;
-        remain = sum % 10;
-        temp->val = remain;
-        
-        // if processing the first node
-        if(result == NULL) {
-            result = current = temp;
-        } else {
-            current->next = temp;
-            current = current->next;
+    while(l1 || l2) {
+        if(l1) {
+            sum += l1->val;
+            l1 = l1->next;
         }
-        
-        l1Ptr = l1Ptr->next;
-        l2Ptr = l2Ptr->next;
+        if(l2) {
+            sum += l2->val;
+            l2 = l2->next;
+        }
+        result->next = (struct ListNode *)malloc(sizeof(struct ListNode));
+        result->next->val = sum % 10;
+        result = result->next;
+        sum /= 10;
     }
     
-    // if l1 remains unprocessed data
-    while(l1Ptr != NULL) {
-        struct ListNode *temp = (struct ListNode *)malloc(sizeof(struct ListNode));
-        sum = l1Ptr->val + carry;
-        carry = sum / 10;
-        remain = sum % 10;
-        temp->val = remain;
-        
-        current->next = temp;
-        current = current->next;
-        l1Ptr = l1Ptr->next;
+    if(sum > 0) {
+        result->next = (struct ListNode *)malloc(sizeof(struct ListNode));
+        result->next->val = sum;
+        result = result->next;
     }
     
-    while(l2Ptr != NULL) {
-        struct ListNode *temp = (struct ListNode *)malloc(sizeof(struct ListNode));
-        sum = l2Ptr->val + carry;
-        carry = sum / 10;
-        remain = sum % 10;
-        temp->val = remain;
-        
-        current->next = temp;
-        current = current->next;
-        l2Ptr = l2Ptr->next;
-    }
+    result->next = NULL;
     
-    // solve overflow
-    if(carry > 0) {
-        struct ListNode *temp = (struct ListNode *)malloc(sizeof(struct ListNode));
-        temp->val = carry;
-        
-        current->next = temp;
-        current = current->next;
-    }
-    
-    current->next = NULL;
-    
-    return result;
+    return dummy->next;
 }
 
 
