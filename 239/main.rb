@@ -8,8 +8,7 @@ def max_sliding_window(nums, k)
     return [] if nums.empty?
     result = []
     
-    nums[0..-k].each_with_index do |num, i|
-        temp = num
+    nums[0..-k].each_with_index do |temp, i|
         nums[(i + 1)...(i + k)].each do |num|
             temp = num if num > temp
         end
