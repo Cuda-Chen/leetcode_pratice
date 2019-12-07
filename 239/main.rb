@@ -5,19 +5,16 @@
 # @param {Integer} k
 # @return {Integer[]}
 def max_sliding_window(nums, k)
-    n = nums.size
-    return nil if nums == nil || n <= 0
+    return [] if nums.empty?
     result = []
     
-    n.times do |i|
-        temp = -10000
-        for j in i...(i + k)
-            if nums[j] > temp
-                temp = nums[j]
-            end
+    nums[0..-k].each_with_index do |num, i|
+        temp = num
+        nums[(i + 1)...(i + k)].each do |num|
+            temp = num if num > temp
         end
         
-        result.push(temp)
+        result << temp
     end
     
     result
