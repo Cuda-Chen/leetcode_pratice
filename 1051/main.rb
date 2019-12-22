@@ -2,12 +2,7 @@
 # @return {Integer}
 def height_checker(heights)
     n = heights.size
-    rightPosition = Array.new(n)
-    n.times do |i|
-        rightPosition[i] = heights[i]
-    end
-    
-    rightPosition.sort!
+    rightPosition = heights.sort
     
     result = 0
     n.times do |i|
