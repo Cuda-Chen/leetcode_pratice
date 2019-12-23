@@ -8,9 +8,9 @@ def is_match(s, p)
   first_match = !s.empty? && (p[0] == s[0] || p[0] == '.')
     
   if p.size >= 2 && p[1] == '*'
-      is_match(s, p[2...p.size]) ||
-             first_match && is_match(s[1...s.size], p)
+      is_match(s, p[2..-1]) ||
+             first_match && is_match(s[1..-1], p)
   else
-      first_match && is_match(s[1...s.size], p[1...p.size])
+      first_match && is_match(s[1..-1], p[1..-1])
   end
 end
