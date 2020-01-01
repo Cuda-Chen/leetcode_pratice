@@ -4,7 +4,7 @@
 # @return {Integer}
 def first_missing_positive(nums)
     n = nums.size
-    nums.each_with_index do |num, i|
+    n.times do |i|
         while nums[i] > 0 && nums[i] <= n && nums[i] != nums[nums[i] - 1]
             rightIdx = nums[i] - 1
             nums[rightIdx], nums[i] = nums[i], nums[rightIdx]
