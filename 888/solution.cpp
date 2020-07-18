@@ -1,3 +1,4 @@
+// https://leetcode.com/problems/fair-candy-swap/discuss/620291/Very-Basic-and-School-level-equations-Logic-Implemented-using-3-lines-cpp-STL
 // two sum variant
 
 class Solution {
