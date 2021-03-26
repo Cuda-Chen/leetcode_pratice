@@ -1,4 +1,5 @@
 // hash table (TLE)
+// O(n^2)
 
 class Solution {
 public:
