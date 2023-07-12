@@ -317,14 +317,15 @@ int countPalindromicSubsequences(char * S){
 
     for(int i = 0; i < n * n; i++) {
         if(h_dp[i] != dp[i]) {
-            puts("result of GPU is inconsistant to CPU");
+            printf("Result at index %d of GPU is inconsistant to CPU\n", i);
+            printf("h_dp[i] %d, dp[i] %d\n", h_dp[i], dp[i]);
             break;
         }
     }
     printf("value of h_dp[0][n - 1]: %d\n", h_dp[(0 * n) + (n - 1)]);
     if(h_dp[0 * n + (n - 1)] == dp[0 * n + (n - 1)])
     {
-        printf("answer of GPU is consistant to CPU\n");
+        printf("Consistant!\n");
     }
     free(h_dp);
 
