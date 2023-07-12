@@ -10,6 +10,8 @@
 
 #define MAX_SOURCE_SIZE (0x100000)
 
+#define TS 4
+
 /* https://zxi.mytechroad.com/blog/dynamic-programming/leetcode-730-count-different-palindromic-subsequences/ */
 
 long kMod = 1000000007;
@@ -173,7 +175,7 @@ int countPalindromicSubsequences(char * S){
     }
 
     // get default device of the default platform (here I use GPU)
-    err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+    err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
     if(err != CL_SUCCESS)
     {
         printf("Error: clGetDeviceIDs\n");
@@ -283,7 +285,8 @@ int countPalindromicSubsequences(char * S){
 
         // execute our compute kernel
         size_t global_item_size[1] = {(size_t)n}; // process the whole dp array
-        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_item_size, NULL,
+        size_t local_item_size[1] = {(size_t)TS};
+        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_item_size, local_item_size,
     	0, NULL, NULL);
         if(err != CL_SUCCESS)
         {
