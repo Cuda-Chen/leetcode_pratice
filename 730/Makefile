@@ -29,7 +29,10 @@ cuda:
 	$(NVCC) -o 730_cuda.out 730_solution.cu
 
 opencl:
-	$(CC) -o 730_cl.out main_cl.c $(LIBS)
+	$(CC) -o 730_cl.out main_cl.c $(LIBS) -I/opt/intel/oneapi/compiler/latest/linux/include/sycl/ -L/opt/intel/oneapi/compiler/latest/linux/lib/
+
+opencl_debug:
+	$(CC) -o queryocl queryocl.c $(LIBS) -I/opt/intel/oneapi/compiler/latest/linux/include/sycl/ -L/opt/intel/oneapi/compiler/latest/linux/lib/
 
 opencl_me:
 	$(CC) -g -o 730_cl.out main_cl.c $(LIBS) -L/usr/local/cuda-9.0/lib64
