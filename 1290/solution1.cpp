@@ -13,16 +13,13 @@
 class Solution {
 public:
     int getDecimalValue(ListNode* head) {
-        vector<int> binary;
-        while(head) {
-            binary.push_back(head->val);
-            head = head->next;
+        ListNode *cur = head;
+        int ans = 0;
+        while(cur) {
+            ans <<= 1;
+            ans |= cur->val;
+            cur = cur->next;
         }
-        
-        int result = 0;
-        for(int i = 0; i < binary.size(); i++) {
-            result += binary[i] * pow(2, binary.size() - i - 1);
-        }
-        return result;
+        return ans;
     }
 };
